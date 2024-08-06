@@ -4,6 +4,8 @@ import socket
 import conf
 import logging
 import re
+# import json
+from datetime import date
 
 # Настраиваем параметры
 server = conf.server
@@ -11,6 +13,9 @@ port = conf.port
 token = conf.token
 nickname = conf.nickname
 channel = conf.channel
+msg = {}
+now = date.today()
+print(now)
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s — %(message)s', datefmt='%Y-%m-%d_%H:%M:%S', handlers=[logging.FileHandler('chat.log', encoding='utf-8')])
 
@@ -32,7 +37,7 @@ class Connection:
         
         # Получаем ответ от сервера
         resp = self.sock.recv(2048).decode('utf-8')
-        msg = []
+        # msg = {}
         #пинг-понг от сервера
         if resp.startswith('PING'):
             self.sock.send("PONG\n".encode('utf-8'))
@@ -40,28 +45,38 @@ class Connection:
         elif len(resp) > 0:
             logging.info(repr(resp))
             
-            nick = re.findall(r'(?=:)(.*)(?=\!)', resp)[0]
+            # msg = re.search(r':(.*)\!.*@.*\.tmi\.twitch\.tv PRIVMSG #(.*) :(.*)', resp)
+            nick = re.findall(r'(?<=@)(.*)(?=.tmi.twitch.tv PRIVMSG #reno_mistel :)', resp)
             text = re.findall(r'(?<=PRIVMSG #reno_mistel :)(.*)(?=\r)', resp)
             
             # #':treldik!treldik@treldik.tmi.twitch.tv PRIVMSG #reno_mistel :SSSsss\r\n'
             # msg = re.findall(r'(?<=:)(.*)(?=\r)', resp)[0]
-            words = resp.split(":") #????
-            #reno_mistel!reno_mistel@reno_mistel.tmi.twitch.tv PRIVMSG #reno_mistel :: :! ломается
+                       #reno_mistel!reno_mistel@reno_mistel.tmi.twitch.tv PRIVMSG #reno_mistel :: :! ломается
             
+            #Предположительная структура будет 
+            # Chat{
+                # 2024-07-18{nick[text], treldik[Привет!, Как дела?]}
+                # 2024-07-19{nick[text], treldik[Привет!, Как дела?]}
+                # }
             
             try:
-                nick.split('!')[0]
-                msg.append([nick, text[0]])
+                # nick.split(':')[0]
+                # Заносим ник в словарь с текстами сообщений
+                msg.update({nick[0] : text[0]})
+                # print(msg)
+                # Выводим текстовые сообщения на экран
+                # print(f'{nick[0]}: {text[0]}')
                 print(msg)
             except:
                 pass
             # print(nick, msg)
             
+            #TODO 1: создать и вывести сообщения в окно чата
             
         
     
         
-        print(resp)
+        # print(resp)
 
     def close(self):
         # Закрываем соединение
